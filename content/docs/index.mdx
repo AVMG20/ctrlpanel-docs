@@ -1,13 +1,177 @@
 ---
-title: Hello World
-description: Your first document
+title: Getting Started
+description: Quick guide to install and set up CtrlPanel.gg on your VPS.
 ---
 
-Welcome to the docs! You can start writing documents in `/content/docs`.
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 
-## What is Next?
+# Getting Started with CtrlPanel.gg
 
-<Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.vercel.app" />
-</Cards>
+This guide will help you quickly set up CtrlPanel.gg on your VPS.
+
+<Callout type="info">
+    Ensure you have basic Linux and database knowledge before proceeding.
+</Callout>
+
+## Prerequisites
+
+- Node.js v18.x or higher
+- MySQL 8.x or MariaDB 10.2+
+- Nginx
+- Git
+
+## Installation
+
+<Steps>
+
+    <Step>
+
+        ### Clone and Configure
+
+        ```bash
+        # Clone the repository
+        git clone https://github.com/AVMG20/ctrlpanel.git /var/www/ctrlpanel
+        cd /var/www/ctrlpanel
+
+        # Install dependencies
+        npm install
+
+        # Set up environment
+        cp .env.example .env
+        nano .env
+        ```
+
+        Update `.env` with your database credentials and domain.
+
+    </Step>
+
+    <Step>
+
+        ### Database and Build
+
+        ```bash
+        # Set up database
+        mysql -u root -p -e "CREATE DATABASE ctrlpanel;"
+        npx prisma migrate deploy
+
+        # Build the app
+        npm run build
+        ```
+
+        Make sure to update the `DATABASE_URL` in `.env` with your database credentials.
+
+    </Step>
+
+    <Step>
+
+        ### Nginx Configuration
+        Basic example for Nginx configuration.
+
+        Create `/etc/nginx/sites-available/ctrlpanel.conf`:
+
+        <Tabs items={['Without SSL', 'With SSL']}>
+            <Tab value="Without SSL">
+                ```nginx
+                server {
+                    listen 80;
+                        server_name <yourdomain.com>;
+
+                        location / {
+                            proxy_pass http://localhost:3000;
+                            proxy_http_version 1.1;
+                            proxy_set_header Upgrade $http_upgrade;
+                            proxy_set_header Connection 'upgrade';
+                            proxy_set_header Host $host;
+                            proxy_cache_bypass $http_upgrade;
+                        }
+                }
+                ```
+            </Tab>
+            <Tab value="With SSL">
+                ```nginx
+                server {
+                    listen 80;
+                    server_name <yourdomain.com>;
+                    return 301 https://$server_name$request_uri;
+                }
+
+                server {
+                    listen 443 ssl;
+                    server_name <yourdomain.com>;
+
+                    ssl_certificate </path/to/your/fullchain.pem>;
+                    ssl_certificate_key </path/to/your/privkey.pem>;
+
+                    location / {
+                        proxy_pass http://localhost:3000;
+                        proxy_http_version 1.1;
+                        proxy_set_header Upgrade $http_upgrade;
+                        proxy_set_header Connection 'upgrade';
+                        proxy_set_header Host $host;
+                        proxy_cache_bypass $http_upgrade;
+                    }
+                }
+                ```
+            </Tab>
+        </Tabs>
+
+        Enable and restart Nginx:
+
+        ```bash
+        sudo ln -s /etc/nginx/sites-available/ctrlpanel.conf /etc/nginx/sites-enabled/
+        sudo nginx -t && sudo systemctl restart nginx
+        ```
+
+    </Step>
+
+    <Step>
+
+        ### SSL (Optional)
+        You can secure your site with SSL using Certbot if you haven't already.
+
+        ```bash
+        sudo apt install certbot python3-certbot-nginx
+        sudo certbot --nginx -d yourdomain.com
+        ```
+
+    </Step>
+
+    <Step>
+
+        ### Process Management
+
+        ```bash
+        # Install PM2
+        sudo npm install -g pm2
+
+        # Start the app
+        pm2 start npm --name "ctrlpanel" -- start
+
+        # Set up auto-start
+        pm2 startup systemd
+        sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp $HOME
+        pm2 save
+        ```
+
+    </Step>
+
+</Steps>
+
+## Wrapping Up
+
+Your CtrlPanel.gg should now be live at `https://yourdomain.com`.
+
+For troubleshooting:
+- Check app logs: `pm2 logs ctrlpanel`
+- Check Nginx logs: `sudo tail -f /var/log/nginx/error.log`
+
+<Callout type="info">
+    Remember to rebuild and restart after code changes:
+    ```bash
+    npm run build
+    pm2 restart ctrlpanel
+    ```
+</Callout>
+
+For more information, visit the [Next.js docs](https://nextjs.org/docs) and [Pterodactyl docs](https://pterodactyl.io/).

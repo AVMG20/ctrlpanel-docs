@@ -9,7 +9,9 @@ import { type HomeLayoutProps } from 'fumadocs-ui/home-layout';
  */
 export const baseOptions: HomeLayoutProps = {
   nav: {
-    title: 'My App',
+    title: <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
+      CtrlPanel
+    </span>,
   },
   links: [
     {
@@ -17,5 +19,9 @@ export const baseOptions: HomeLayoutProps = {
       url: '/docs',
       active: 'nested-url',
     },
+    {
+      text: "Demo",
+      url: "https://next-ctrlpanel.avmg.dev",
+    }
   ],
 };
